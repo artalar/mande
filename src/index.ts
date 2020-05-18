@@ -112,6 +112,8 @@ export interface MandeInstance {
   delete(url: string | number, options?: Options): Promise<unknown>
 }
 
+const { assign } = Object
+
 function stringifyQuery(query: any): string {
   let searchParams = Object.keys(query)
     .map((k) => [k, query[k]].map(encodeURIComponent).join('='))
@@ -179,26 +181,29 @@ export function mande(
       data = dataOrOptions
     }
 
-    let mergedOptions = {
-      ...defaults,
-      ...instanceOptions,
-      method,
-      ...localOptions,
-    }
+    let mergedOptions = assign(
+      {},
+      defaults,
+      instanceOptions,
+      { method },
+      localOptions
+    )
 
-    let query = {
-      ...defaults.query,
-      ...instanceOptions.query,
-      ...localOptions.query,
-    }
+    let query = assign(
+      {},
+      defaults.query,
+      instanceOptions.query,
+      localOptions.query
+    )
 
     let { responseAs } = mergedOptions as Required<Options>
 
-    mergedOptions.headers = {
-      ...defaults.headers,
-      ...instanceOptions.headers,
-      ...localOptions.headers,
-    }
+    mergedOptions.headers = assign(
+      {},
+      defaults.headers,
+      instanceOptions.headers,
+      localOptions.headers
+    )
 
     url = joinURL(baseURL, typeof url === 'number' ? '' + url : url || '')
 
@@ -214,9 +219,7 @@ export function mande(
         if (responseAs === 'response') return response
         return response.status == 204 ? null : response[responseAs]()
       }
-      let err = new Error(response.statusText) as MandeError
-      err.response = response
-      throw err
+      throw assign(new Error(response.statusText), { response })
     })
   }
 
